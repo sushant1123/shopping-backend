@@ -22,6 +22,29 @@ exports.register = async (req, res) => {
 	}
 };
 
+//TODO
 exports.login = async (req, res) => {
-	//TODO
+	try {
+		const { username } = req.body;
+
+		const user = await User.findOne({ username: username });
+
+		if (!user) {
+			return res.status(401).json({ message: "Wrong credentials" });
+		}
+
+		const hashedPass = await CryptoJS.AES.decrypt(user.password, process.env.CRYPTO_SECRET);
+		const pwd = hashedPass.toString(CryptoJS.enc.Utf8);
+
+		if (pwd !== req.body.password) {
+			return res.status(401).json({ message: "Wrong credentials" });
+		}
+
+		const { password, ...rest } = user._doc;
+
+		return res.status(200).json(rest);
+	} catch (error) {
+		console.log(error);
+		res.status(500).json(error);
+	}
 };
