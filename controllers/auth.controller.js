@@ -1,4 +1,5 @@
 const CryptoJS = require("crypto-js");
+const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
 
 exports.register = async (req, res) => {
@@ -9,6 +10,11 @@ exports.register = async (req, res) => {
 		if (!password?.length) {
 			return res.status(500).json({ message: "Passwod is required" });
 		}
+
+		// if (req.body.isAdmin === true) {
+		// 	obj.isAdmin = req.body?.isAdmin;
+		// }
+
 		obj.password = await CryptoJS.AES.encrypt(password, process.env.CRYPTO_SECRET).toString();
 
 		const newUser = new User(obj);
@@ -40,9 +46,13 @@ exports.login = async (req, res) => {
 			return res.status(401).json({ message: "Wrong credentials" });
 		}
 
+		const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET, {
+			expiresIn: "3hr",
+		});
+
 		const { password, ...rest } = user._doc;
 
-		return res.status(200).json(rest);
+		return res.status(200).json({ ...rest, token });
 	} catch (error) {
 		console.log(error);
 		res.status(500).json(error);
